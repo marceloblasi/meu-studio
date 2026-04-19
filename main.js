@@ -4,6 +4,7 @@ const fs = require('fs');
 
 const dataFilePath = path.join(app.getPath('userData'), 'clientes_allanda.json');
 const agendaFilePath = path.join(app.getPath('userData'), 'agenda_allanda.json');
+const servicosFilePath = path.join(app.getPath('userData'), 'servicos_allanda.json');
 
 // Inicializa o arquivo se não existir
 if (!fs.existsSync(dataFilePath)) {
@@ -11,6 +12,13 @@ if (!fs.existsSync(dataFilePath)) {
 }
 if (!fs.existsSync(agendaFilePath)) {
     fs.writeFileSync(agendaFilePath, JSON.stringify([]));
+}
+if (!fs.existsSync(servicosFilePath)) {
+    fs.writeFileSync(servicosFilePath, JSON.stringify([
+        { id: "1", nome: "Sobrancelha", valor: "50" },
+        { id: "2", nome: "Massagem", valor: "120" },
+        { id: "3", nome: "Unhas", valor: "60" }
+    ]));
 }
 
 function createWindow() {
@@ -154,6 +162,57 @@ ipcMain.handle('delete-agenda', (event, agendaId) => {
         return { success: true };
     } catch (error) {
         console.error("Erro ao deletar agenda", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// IPC Handler para obter serviços
+ipcMain.handle('get-servicos', () => {
+    try {
+        const rawData = fs.readFileSync(servicosFilePath);
+        return JSON.parse(rawData);
+    } catch (error) {
+        console.error("Erro ao ler servicos", error);
+        return [];
+    }
+});
+
+// IPC Handler para salvar serviço
+ipcMain.handle('save-servico', (event, servicoData) => {
+    try {
+        const rawData = fs.readFileSync(servicosFilePath);
+        let servicos = JSON.parse(rawData);
+
+        if (servicoData.id) {
+            const index = servicos.findIndex(c => c.id === servicoData.id);
+            if (index !== -1) {
+                servicos[index] = servicoData;
+            }
+        } else {
+            servicoData.id = Date.now().toString();
+            servicos.push(servicoData);
+        }
+
+        fs.writeFileSync(servicosFilePath, JSON.stringify(servicos, null, 2));
+        return { success: true };
+    } catch (error) {
+        console.error("Erro ao salvar servico", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// IPC Handler para excluir serviço
+ipcMain.handle('delete-servico', (event, servicoId) => {
+    try {
+        const rawData = fs.readFileSync(servicosFilePath);
+        let servicos = JSON.parse(rawData);
+        
+        servicos = servicos.filter(c => c.id !== servicoId);
+        
+        fs.writeFileSync(servicosFilePath, JSON.stringify(servicos, null, 2));
+        return { success: true };
+    } catch (error) {
+        console.error("Erro ao deletar servico", error);
         return { success: false, error: error.message };
     }
 });

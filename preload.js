@@ -6,5 +6,8 @@ contextBridge.exposeInMainWorld('api', {
     deleteClient: (clientId) => ipcRenderer.invoke('delete-client', clientId),
     getAgenda: () => ipcRenderer.invoke('get-agenda'),
     saveAgenda: (agendaData) => ipcRenderer.invoke('save-agenda', agendaData),
-    deleteAgenda: (agendaId) => ipcRenderer.invoke('delete-agenda', agendaId)
+    deleteAgenda: (agendaId) => ipcRenderer.invoke('delete-agenda', agendaId),
+    getServicos: () => ipcRenderer.invoke('get-servicos'),
+    saveServico: (servicoData) => ipcRenderer.invoke('save-servico', servicoData),
+    deleteServico: (servicoId) => ipcRenderer.invoke('delete-servico', servicoId)
 });

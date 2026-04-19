@@ -18,9 +18,19 @@ const btnNavAgenda = document.getElementById('btn-nav-agenda');
 const viewAgenda = document.getElementById('view-agenda');
 const agendaForm = document.getElementById('agenda-form');
 const agendaClienteSelect = document.getElementById('agenda-cliente');
+const agendaServicoSelect = document.getElementById('agenda-servico');
 const agendaValorInput = document.getElementById('agenda-valor');
 const agendaListContainer = document.getElementById('agenda-list-container');
 const agendaEmptyState = document.getElementById('agenda-empty-state');
+
+// Servicos Elements
+const btnNavServicos = document.getElementById('btn-nav-servicos');
+const viewServicos = document.getElementById('view-servicos');
+const servicoForm = document.getElementById('servico-form');
+const servicosTbody = document.getElementById('servicos-tbody');
+const servicoNome = document.getElementById('servico-nome');
+const servicoValor = document.getElementById('servico-valor');
+const servicoId = document.getElementById('servico-id');
 
 // Finance Elements
 const btnNavFinance = document.getElementById('btn-nav-finance');
@@ -43,10 +53,12 @@ function navigateTo(view) {
     btnNavAdd.classList.remove('active');
     btnNavAgenda.classList.remove('active');
     btnNavFinance.classList.remove('active');
+    btnNavServicos.classList.remove('active');
     viewList.classList.remove('active');
     viewForm.classList.remove('active');
     viewAgenda.classList.remove('active');
     viewFinance.classList.remove('active');
+    viewServicos.classList.remove('active');
 
     if (view === 'list') {
         btnNavList.classList.add('active');
@@ -60,11 +72,17 @@ function navigateTo(view) {
         viewAgenda.classList.add('active');
         loadAgenda();
         populateAgendaClients();
+        populateServicosDropdowns();
     } else if (view === 'finance') {
         btnNavFinance.classList.add('active');
         viewFinance.classList.add('active');
         populateFinanceClients();
+        populateServicosDropdowns();
         updateFinance();
+    } else if (view === 'servicos') {
+        btnNavServicos.classList.add('active');
+        viewServicos.classList.add('active');
+        loadServicos();
     }
 }
 
@@ -80,6 +98,7 @@ btnNavList.addEventListener('click', () => navigateTo('list'));
 btnNavAdd.addEventListener('click', openAddForm);
 btnNavAgenda.addEventListener('click', () => navigateTo('agenda'));
 btnNavFinance.addEventListener('click', () => navigateTo('finance'));
+btnNavServicos.addEventListener('click', () => navigateTo('servicos'));
 btnEmptyAdd.addEventListener('click', openAddForm);
 btnCancel.addEventListener('click', () => navigateTo('list'));
 
@@ -223,6 +242,43 @@ window.deleteClient = async (id) => {
 };
 
 // ======================== AGENDA LOGIC ========================
+
+let servicosListLocal = [];
+
+async function populateServicosDropdowns() {
+    servicosListLocal = await window.api.getServicos();
+    let optionsHtml = '<option value="" disabled selected>Selecione um serviço...</option>';
+    let filterOptionsHtml = '<option value="">Todos os Serviços</option>';
+    let checkboxesHtml = '';
+    
+    servicosListLocal.forEach(s => {
+        optionsHtml += `<option value="${s.nome}">${s.nome}</option>`;
+        filterOptionsHtml += `<option value="${s.nome}">${s.nome}</option>`;
+        checkboxesHtml += `
+            <label class="custom-checkbox">
+                <input type="checkbox" name="servicos" value="${s.nome}">
+                <span class="checkmark"></span>
+                ${s.nome}
+            </label>
+        `;
+    });
+    
+    if(agendaServicoSelect) agendaServicoSelect.innerHTML = optionsHtml;
+    if(filterFinanceServico) filterFinanceServico.innerHTML = filterOptionsHtml;
+    
+    const clientCheckboxes = document.getElementById('client-servicos-checkboxes');
+    if(clientCheckboxes) clientCheckboxes.innerHTML = checkboxesHtml;
+}
+
+if(agendaServicoSelect) {
+    agendaServicoSelect.addEventListener('change', (e) => {
+        const selectedSrvName = e.target.value;
+        const srv = servicosListLocal.find(s => s.nome === selectedSrvName);
+        if (srv && agendaValorInput) {
+            agendaValorInput.value = parseFloat(srv.valor).toFixed(2);
+        }
+    });
+}
 
 async function populateAgendaClients() {
     clientsList = await window.api.getClients();
@@ -386,5 +442,73 @@ async function updateFinance() {
     dashServicos.textContent = qtd;
 }
 
+// ======================== SERVICOS (CRUD) LOGIC ========================
+
+async function loadServicos() {
+    servicosListLocal = await window.api.getServicos();
+    renderServicos(servicosListLocal);
+}
+
+function renderServicos(list) {
+    servicosTbody.innerHTML = '';
+    if(list.length === 0) {
+        servicosTbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">Nenhum serviço cadastrado.</td></tr>`;
+        return;
+    }
+    list.forEach(s => {
+        const tr = document.createElement('tr');
+        const valorFormatado = parseFloat(s.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        tr.innerHTML = `
+            <td><strong>${s.nome}</strong></td>
+            <td>${valorFormatado}</td>
+            <td>
+                <button class="action-btn edit" onclick="editServico('${s.id}')">Editar</button>
+                <button class="action-btn delete" onclick="deleteServico('${s.id}')">Excluir</button>
+            </td>
+        `;
+        servicosTbody.appendChild(tr);
+    });
+}
+
+servicoForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+        id: servicoId.value || null,
+        nome: servicoNome.value,
+        valor: servicoValor.value
+    };
+    const res = await window.api.saveServico(data);
+    if(res.success) {
+        servicoForm.reset();
+        servicoId.value = '';
+        loadServicos();
+        populateServicosDropdowns(); 
+    } else {
+        alert("Erro: " + res.error);
+    }
+});
+
+window.deleteServico = async (id) => {
+    if(confirm('Tem certeza que deseja excluir este serviço do portfólio?')) {
+        const res = await window.api.deleteServico(id);
+        if(res.success) {
+            loadServicos();
+            populateServicosDropdowns();
+        } else {
+            alert('Erro: ' + res.error);
+        }
+    }
+};
+
+window.editServico = (id) => {
+    const srv = servicosListLocal.find(s => s.id === id);
+    if(srv) {
+        servicoId.value = srv.id;
+        servicoNome.value = srv.nome;
+        servicoValor.value = srv.valor;
+    }
+};
+
 // Initialize
 loadClients();
+populateServicosDropdowns();
