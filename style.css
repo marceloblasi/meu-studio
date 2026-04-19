@@ -1,9 +1,12 @@
 :root {
-    --bg-color: #FFF5F8; /* Rosa muito claro */
+    --bg-color: #FFF5F8;
+    /* Rosa muito claro */
     --surface-color: #FFFFFF;
-    --primary-color: #FFB6C1; /* Rosa claro pastel */
+    --primary-color: #FFB6C1;
+    /* Rosa claro pastel */
     --primary-hover: #FFA4B2;
-    --text-primary: #3E2723; /* Marrom muito escuro, quase preto, combinando com rosa */
+    --text-primary: #3E2723;
+    /* Marrom muito escuro, quase preto, combinando com rosa */
     --text-secondary: #795548;
     --danger-color: #FF5252;
     --border-color: #F8D8E0;
@@ -110,8 +113,15 @@ nav {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .section-header {
@@ -153,7 +163,8 @@ nav {
     border-collapse: collapse;
 }
 
-.clients-table th, .clients-table td {
+.clients-table th,
+.clients-table td {
     padding: 16px 20px;
     text-align: left;
     border-bottom: 1px solid var(--bg-color);
@@ -209,8 +220,13 @@ nav {
     transition: color 0.2s;
 }
 
-.action-btn.edit:hover { color: #2196F3; }
-.action-btn.delete:hover { color: var(--danger-color); }
+.action-btn.edit:hover {
+    color: #2196F3;
+}
+
+.action-btn.delete:hover {
+    color: var(--danger-color);
+}
 
 /* Empty State */
 .empty-state {
@@ -227,7 +243,9 @@ nav {
     margin-bottom: 16px;
 }
 
-.mt-2 { margin-top: 16px; }
+.mt-2 {
+    margin-top: 16px;
+}
 
 /* Form Styles */
 .card {
@@ -341,11 +359,11 @@ nav {
     transition: .4s;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--danger-color);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(22px);
 }
 
@@ -397,7 +415,8 @@ input:checked + .slider:before {
     gap: 20px;
 }
 
-.agenda-form-card, .agenda-list-card {
+.agenda-form-card,
+.agenda-list-card {
     background: var(--surface-color);
     padding: 25px;
     border-radius: var(--radius-lg);
@@ -522,7 +541,7 @@ select:focus {
 }
 
 .badge-concluido {
-    background: #2E7D32;
+    background: #FFA4B2;
     color: white;
     font-size: 11px;
     padding: 2px 6px;
@@ -530,4 +549,3 @@ select:focus {
     margin-left: 10px;
     vertical-align: middle;
 }
-
