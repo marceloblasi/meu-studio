@@ -31,6 +31,9 @@ const servicosTbody = document.getElementById('servicos-tbody');
 const servicoNome = document.getElementById('servico-nome');
 const servicoValor = document.getElementById('servico-valor');
 const servicoId = document.getElementById('servico-id');
+const btnSaveServico = document.getElementById('btn-save-servico');
+const btnCancelServico = document.getElementById('btn-cancel-servico');
+const formServicoTitle = document.getElementById('form-servico-title');
 
 // Finance Elements
 const btnNavFinance = document.getElementById('btn-nav-finance');
@@ -470,6 +473,18 @@ function renderServicos(list) {
     });
 }
 
+function resetServicoForm() {
+    servicoForm.reset();
+    servicoId.value = '';
+    btnCancelServico.style.display = 'none';
+    btnSaveServico.textContent = 'Salvar Serviço';
+    formServicoTitle.textContent = 'Cadastrar Novo';
+}
+
+if(btnCancelServico) {
+    btnCancelServico.addEventListener('click', resetServicoForm);
+}
+
 servicoForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = {
@@ -479,8 +494,7 @@ servicoForm.addEventListener('submit', async (e) => {
     };
     const res = await window.api.saveServico(data);
     if(res.success) {
-        servicoForm.reset();
-        servicoId.value = '';
+        resetServicoForm();
         loadServicos();
         populateServicosDropdowns(); 
     } else {
@@ -506,6 +520,9 @@ window.editServico = (id) => {
         servicoId.value = srv.id;
         servicoNome.value = srv.nome;
         servicoValor.value = srv.valor;
+        btnCancelServico.style.display = 'block';
+        btnSaveServico.textContent = 'Atualizar Serviço';
+        formServicoTitle.textContent = 'Editar Serviço';
     }
 };
 
