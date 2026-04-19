@@ -9,5 +9,7 @@ contextBridge.exposeInMainWorld('api', {
     deleteAgenda: (agendaId) => ipcRenderer.invoke('delete-agenda', agendaId),
     getServicos: () => ipcRenderer.invoke('get-servicos'),
     saveServico: (servicoData) => ipcRenderer.invoke('save-servico', servicoData),
-    deleteServico: (servicoId) => ipcRenderer.invoke('delete-servico', servicoId)
+    deleteServico: (servicoId) => ipcRenderer.invoke('delete-servico', servicoId),
+    getConfig: () => ipcRenderer.invoke('get-config'),
+    saveConfig: (configData) => ipcRenderer.invoke('save-config', configData)
 });

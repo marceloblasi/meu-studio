@@ -5,6 +5,7 @@ const fs = require('fs');
 const dataFilePath = path.join(app.getPath('userData'), 'clientes_allanda.json');
 const agendaFilePath = path.join(app.getPath('userData'), 'agenda_allanda.json');
 const servicosFilePath = path.join(app.getPath('userData'), 'servicos_allanda.json');
+const configFilePath = path.join(app.getPath('userData'), 'config_allanda.json');
 
 // Inicializa o arquivo se não existir
 if (!fs.existsSync(dataFilePath)) {
@@ -12,6 +13,13 @@ if (!fs.existsSync(dataFilePath)) {
 }
 if (!fs.existsSync(agendaFilePath)) {
     fs.writeFileSync(agendaFilePath, JSON.stringify([]));
+}
+if (!fs.existsSync(configFilePath)) {
+    fs.writeFileSync(configFilePath, JSON.stringify({
+        horaInicio: "08:00",
+        horaFim: "20:00",
+        diasUteis: ["1", "2", "3", "4", "5", "6"] // Seg a Sábado
+    }, null, 2));
 }
 if (!fs.existsSync(servicosFilePath)) {
     fs.writeFileSync(servicosFilePath, JSON.stringify([
@@ -213,6 +221,27 @@ ipcMain.handle('delete-servico', (event, servicoId) => {
         return { success: true };
     } catch (error) {
         console.error("Erro ao deletar servico", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// IPC Handler para config
+ipcMain.handle('get-config', () => {
+    try {
+        const rawData = fs.readFileSync(configFilePath);
+        return JSON.parse(rawData);
+    } catch (error) {
+        console.error("Erro ao ler config", error);
+        return {};
+    }
+});
+
+ipcMain.handle('save-config', (event, configData) => {
+    try {
+        fs.writeFileSync(configFilePath, JSON.stringify(configData, null, 2));
+        return { success: true };
+    } catch (error) {
+        console.error("Erro ao salvar config", error);
         return { success: false, error: error.message };
     }
 });

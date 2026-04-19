@@ -16,12 +16,33 @@ const btnCancel = document.getElementById('btn-cancel');
 // Agenda Elements
 const btnNavAgenda = document.getElementById('btn-nav-agenda');
 const viewAgenda = document.getElementById('view-agenda');
+
+const calendarDate = document.getElementById('calendar-date');
+const calendarDayLabel = document.getElementById('calendar-day-label');
+const btnPrevDay = document.getElementById('btn-prev-day');
+const btnNextDay = document.getElementById('btn-next-day');
+const timelineContainer = document.getElementById('timeline-container');
+
+const agendaModalOverlay = document.getElementById('agenda-modal-overlay');
 const agendaForm = document.getElementById('agenda-form');
 const agendaClienteSelect = document.getElementById('agenda-cliente');
 const agendaServicoSelect = document.getElementById('agenda-servico');
 const agendaValorInput = document.getElementById('agenda-valor');
-const agendaListContainer = document.getElementById('agenda-list-container');
-const agendaEmptyState = document.getElementById('agenda-empty-state');
+const agendaDataInput = document.getElementById('agenda-data');
+const agendaHoraInput = document.getElementById('agenda-hora');
+
+const btnCloseAgendaModal = document.getElementById('btn-close-agenda-modal');
+const btnDeleteAgendaModal = document.getElementById('btn-delete-agenda-modal');
+const btnConcluirAgendaModal = document.getElementById('btn-concluir-agenda-modal');
+const modalTimeLabel = document.getElementById('modal-time-label');
+
+// Config Elements
+const btnNavConfig = document.getElementById('btn-nav-config');
+const viewConfig = document.getElementById('view-config');
+const configForm = document.getElementById('config-form');
+const configHoraInicio = document.getElementById('config-horainicio');
+const configHoraFim = document.getElementById('config-horafim');
+let globalConfig = null;
 
 // Servicos Elements
 const btnNavServicos = document.getElementById('btn-nav-servicos');
@@ -57,11 +78,14 @@ function navigateTo(view) {
     btnNavAgenda.classList.remove('active');
     btnNavFinance.classList.remove('active');
     btnNavServicos.classList.remove('active');
+    if(btnNavConfig) btnNavConfig.classList.remove('active');
+    
     viewList.classList.remove('active');
     viewForm.classList.remove('active');
     viewAgenda.classList.remove('active');
     viewFinance.classList.remove('active');
     viewServicos.classList.remove('active');
+    if(viewConfig) viewConfig.classList.remove('active');
 
     if (view === 'list') {
         btnNavList.classList.add('active');
@@ -86,6 +110,10 @@ function navigateTo(view) {
         btnNavServicos.classList.add('active');
         viewServicos.classList.add('active');
         loadServicos();
+    } else if (view === 'config') {
+        if(btnNavConfig) btnNavConfig.classList.add('active');
+        if(viewConfig) viewConfig.classList.add('active');
+        loadConfig();
     }
 }
 
@@ -102,6 +130,7 @@ btnNavAdd.addEventListener('click', openAddForm);
 btnNavAgenda.addEventListener('click', () => navigateTo('agenda'));
 btnNavFinance.addEventListener('click', () => navigateTo('finance'));
 btnNavServicos.addEventListener('click', () => navigateTo('servicos'));
+if(btnNavConfig) btnNavConfig.addEventListener('click', () => navigateTo('config'));
 btnEmptyAdd.addEventListener('click', openAddForm);
 btnCancel.addEventListener('click', () => navigateTo('list'));
 
@@ -293,71 +322,170 @@ async function populateAgendaClients() {
 }
 
 async function loadAgenda() {
-    const agendaList = await window.api.getAgenda();
-    renderAgenda(agendaList);
+    await loadConfig();
+    updateCalendarDateDisplay();
+    renderDailyCalendar();
 }
 
-function renderAgenda(agendaList) {
-    agendaListContainer.innerHTML = '';
-    
-    if (agendaList.length === 0) {
-        agendaEmptyState.classList.remove('hidden');
-        return;
+let currentDate = new Date();
+
+function getFormattedDate(d) {
+    const local = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+    return local.toISOString().split('T')[0];
+}
+
+function updateCalendarDateDisplay() {
+    const dateStr = getFormattedDate(currentDate);
+    calendarDate.value = dateStr;
+    const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const isToday = dateStr === getFormattedDate(new Date()) ? " (Hoje)" : "";
+    calendarDayLabel.textContent = `${dayNames[currentDate.getDay()]}${isToday}`;
+}
+
+calendarDate.addEventListener('change', (e) => {
+    const parts = e.target.value.split('-');
+    if(parts.length === 3) {
+        currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        renderDailyCalendar();
     }
+});
+
+btnPrevDay.addEventListener('click', () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    renderDailyCalendar();
+});
+
+btnNextDay.addEventListener('click', () => {
+    currentDate.setDate(currentDate.getDate() + 1);
+    renderDailyCalendar();
+});
+
+async function renderDailyCalendar() {
+    updateCalendarDateDisplay();
+    timelineContainer.innerHTML = '';
     
-    agendaEmptyState.classList.add('hidden');
-    
-    agendaList.forEach(agenda => {
-        // Find client
-        const client = clientsList.find(c => c.id === agenda.clienteId);
-        const clientName = client ? client.nome : 'Cliente Deletada';
-        const clientPhone = client ? client.telefone : '';
-
-        // Formata Data
-        const parts = agenda.data.split('-');
-        let dataFormated = agenda.data;
-        if(parts.length === 3) dataFormated = `${parts[2]}/${parts[1]}`;
-
-        // Valor
-        const valorFormatado = parseFloat(agenda.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-
-        // Actions UI
-        let actionsHtml = '';
-        let badgeHtml = '';
-        if (agenda.concluido) {
-            badgeHtml = `<span class="badge-concluido">✔ Concluído</span>`;
-            actionsHtml = `<button class="action-btn delete" style="margin-left: 10px; font-size: 16px;" onclick="deleteAgenda('${agenda.id}')" title="Excluir Histórico">✖</button>`;
-        } else {
-            actionsHtml = `
-                <button class="btn-success" onclick="completeAgenda('${agenda.id}')">✔ Concluir</button>
-                <button class="action-btn delete" style="font-size: 16px;" onclick="deleteAgenda('${agenda.id}')" title="Cancelar Agendamento">✖</button>
-            `;
-        }
-
-        const div = document.createElement('div');
-        div.className = 'agenda-item';
-        div.innerHTML = `
-            <div class="agenda-info">
-                <h4>${clientName} - ${agenda.servico} ${badgeHtml}</h4>
-                <span>📱 ${clientPhone || 'Sem telefone'} | ${valorFormatado}</span>
-            </div>
-            <div class="agenda-time">
-                ${dataFormated} às ${agenda.hora}
-                <div style="margin-top: 5px;">
-                    ${actionsHtml}
-                </div>
+    // Check folga
+    const dayOfWeek = currentDate.getDay().toString();
+    if(globalConfig && globalConfig.diasUteis && !globalConfig.diasUteis.includes(dayOfWeek)) {
+        timelineContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🏖️</div>
+                <h3 style="color:var(--text-primary); margin-bottom:10px;">Dia de Folga!</h3>
+                <p>Nenhum atendimento previsto para este dia da semana segundo suas configurações.</p>
             </div>
         `;
-        agendaListContainer.appendChild(div);
-    });
+        return;
+    }
+
+    const agendaAll = await window.api.getAgenda();
+    const targetDate = getFormattedDate(currentDate);
+    const todaysAgenda = agendaAll.filter(a => a.data === targetDate);
+
+    let startH = parseInt(globalConfig.horaInicio.split(':')[0]);
+    let endH = parseInt(globalConfig.horaFim.split(':')[0]);
+    if(isNaN(startH)) startH = 8;
+    if(isNaN(endH)) endH = 20;
+
+    for(let h = startH; h <= endH; h++) {
+        const hourStr = h.toString().padStart(2, '0') + ':00';
+        const prefix = h.toString().padStart(2, '0') + ':';
+        const appsInHour = todaysAgenda.filter(a => a.hora.startsWith(prefix));
+
+        const slotDiv = document.createElement('div');
+        slotDiv.className = 'timeline-slot';
+        
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'timeline-time';
+        timeDiv.textContent = hourStr;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'timeline-content';
+        
+        if (appsInHour.length > 0) {
+            appsInHour.forEach(agenda => {
+                const client = clientsList.find(c => c.id === agenda.clienteId);
+                const clientName = client ? client.nome : 'Cliente Deletada';
+                const concluidoClass = agenda.concluido ? 'concluido' : '';
+                
+                const blockDiv = document.createElement('div');
+                blockDiv.className = `agenda-block ${concluidoClass}`;
+                blockDiv.innerHTML = `
+                    <span style="font-weight:600;">${agenda.hora} - ${clientName} (${agenda.servico})</span>
+                    <span>${parseFloat(agenda.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} ${agenda.concluido ? '✔' : ''}</span>
+                `;
+                blockDiv.onclick = (e) => {
+                    e.stopPropagation();
+                    openAgendaModal(agenda);
+                };
+                contentDiv.appendChild(blockDiv);
+            });
+        } else {
+            contentDiv.style.color = '#ccc';
+            contentDiv.style.fontStyle = 'italic';
+            contentDiv.textContent = ''; // Removed text, just keep behavior
+            const innerLink = document.createElement('span');
+            innerLink.textContent = '+ Marcar Horário';
+            innerLink.style.fontSize = '12px';
+            innerLink.style.cursor = 'pointer';
+            contentDiv.appendChild(innerLink);
+            slotDiv.onclick = () => openNewAgendaModal(targetDate, hourStr);
+        }
+
+        slotDiv.appendChild(timeDiv);
+        slotDiv.appendChild(contentDiv);
+        timelineContainer.appendChild(slotDiv);
+    }
 }
+
+function openNewAgendaModal(date, time) {
+    agendaForm.reset();
+    document.getElementById('agenda-id').value = '';
+    agendaDataInput.value = date;
+    agendaHoraInput.value = time;
+    
+    modalTimeLabel.textContent = `Novo Agendamento: ${time}`;
+    btnDeleteAgendaModal.classList.add('hidden');
+    btnConcluirAgendaModal.classList.add('hidden');
+    
+    agendaModalOverlay.classList.remove('hidden');
+}
+
+function openAgendaModal(agenda) {
+    document.getElementById('agenda-id').value = agenda.id;
+    agendaClienteSelect.value = agenda.clienteId;
+    agendaServicoSelect.value = agenda.servico;
+    agendaDataInput.value = agenda.data;
+    agendaHoraInput.value = agenda.hora;
+    document.getElementById('agenda-valor').value = agenda.valor;
+    
+    modalTimeLabel.textContent = `Editar Horário: ${agenda.hora}`;
+    btnDeleteAgendaModal.classList.remove('hidden');
+    btnDeleteAgendaModal.onclick = () => deleteAgenda(agenda.id);
+    
+    if(!agenda.concluido) {
+        btnConcluirAgendaModal.classList.remove('hidden');
+        btnConcluirAgendaModal.onclick = () => completeAgenda(agenda.id);
+    } else {
+        btnConcluirAgendaModal.classList.add('hidden');
+    }
+
+    agendaModalOverlay.classList.remove('hidden');
+}
+
+btnCloseAgendaModal.addEventListener('click', () => {
+    agendaModalOverlay.classList.add('hidden');
+});
 
 agendaForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    // Obter data original para manter 'concluido' ou criar caso seja novo
     const id = document.getElementById('agenda-id').value || null;
     let concluido = false;
+    
+    if(id) {
+       const agendaList = await window.api.getAgenda();
+       const existing = agendaList.find(a => a.id === id);
+       if(existing) concluido = existing.concluido;
+    }
     
     const agendaData = {
         id: id,
@@ -371,9 +499,8 @@ agendaForm.addEventListener('submit', async (e) => {
 
     const response = await window.api.saveAgenda(agendaData);
     if (response.success) {
-        agendaForm.reset();
-        document.getElementById('agenda-id').value = '';
-        loadAgenda(); // recarrega a lista
+        agendaModalOverlay.classList.add('hidden');
+        renderDailyCalendar(); 
     } else {
         alert("Erro ao salvar: " + response.error);
     }
@@ -383,7 +510,8 @@ window.deleteAgenda = async (id) => {
     if(confirm('Tem certeza que deseja apagar este agendamento?')){
         const response = await window.api.deleteAgenda(id);
         if(response.success) {
-            loadAgenda();
+            agendaModalOverlay.classList.add('hidden');
+            renderDailyCalendar();
         } else {
             alert('Erro ao apagar: ' + response.error);
         }
@@ -396,7 +524,8 @@ window.completeAgenda = async (id) => {
     if (agenda) {
         agenda.concluido = true;
         await window.api.saveAgenda(agenda);
-        loadAgenda();
+        agendaModalOverlay.classList.add('hidden');
+        renderDailyCalendar();
     }
 };
 
@@ -526,6 +655,43 @@ window.editServico = (id) => {
     }
 };
 
+// ======================== CONFIGS LOGIC ========================
+
+async function loadConfig() {
+    globalConfig = await window.api.getConfig();
+    if(configHoraInicio) configHoraInicio.value = globalConfig.horaInicio;
+    if(configHoraFim) configHoraFim.value = globalConfig.horaFim;
+    if(globalConfig.diasUteis) {
+        document.querySelectorAll('input[name="diasuteis"]').forEach(cb => {
+            cb.checked = globalConfig.diasUteis.includes(cb.value);
+        });
+    }
+}
+
+if(configForm) {
+    configForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const diasUteisCheckbox = document.querySelectorAll('input[name="diasuteis"]:checked');
+        const diasUteis = Array.from(diasUteisCheckbox).map(cb => cb.value);
+        
+        const configData = {
+            horaInicio: configHoraInicio.value,
+            horaFim: configHoraFim.value,
+            diasUteis: diasUteis
+        };
+
+        const res = await window.api.saveConfig(configData);
+        if(res.success) {
+            alert('Configurações Salvas com Sucesso!');
+            globalConfig = configData;
+        } else {
+            alert('Erro ao salvar: ' + res.error);
+        }
+    });
+}
+
 // Initialize
-loadClients();
-populateServicosDropdowns();
+loadConfig().then(() => {
+    loadClients();
+    populateServicosDropdowns();
+});
