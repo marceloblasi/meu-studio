@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -49,6 +49,17 @@ function createWindow() {
 
 app.whenReady().then(() => {
     createWindow();
+
+    const menu = Menu.buildFromTemplate([
+        {
+            label: 'Início',
+            click: () => {
+                const wins = BrowserWindow.getAllWindows();
+                if(wins.length > 0) wins[0].webContents.executeJavaScript('if(typeof navigateTo === "function") navigateTo("home");');
+            }
+        }
+    ]);
+    Menu.setApplicationMenu(menu);
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {

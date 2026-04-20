@@ -648,7 +648,7 @@ if(btnToggleAgendaView) {
     btnToggleAgendaView.addEventListener('click', () => {
         if(agendaViewMode === 'calendar') {
             agendaViewMode = 'list';
-            btnToggleAgendaView.textContent = 'Ver Calendário Mágico ✨';
+            btnToggleAgendaView.textContent = 'Ver Calendário 📅';
         } else {
             agendaViewMode = 'calendar';
             btnToggleAgendaView.textContent = 'Ver Horários em Lista 📋';
@@ -791,6 +791,8 @@ async function updateFinance() {
     let soma = 0;
     let qtd = 0;
     
+    let relevantAgenda = [];
+
     agendaList.forEach(a => {
         if(!a.concluido) return;
 
@@ -801,10 +803,44 @@ async function updateFinance() {
 
         soma += parseFloat(a.valor || 0);
         qtd++;
+        relevantAgenda.push(a);
     });
     
     dashFaturamento.textContent = soma.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
     dashServicos.textContent = qtd;
+
+    const financeListTbody = document.getElementById('finance-list-tbody');
+    const financeListEmpty = document.getElementById('finance-list-empty');
+
+    if(financeListTbody) {
+        financeListTbody.innerHTML = '';
+        if(relevantAgenda.length === 0) {
+            financeListEmpty.classList.remove('hidden');
+        } else {
+            financeListEmpty.classList.add('hidden');
+            
+            // Ordem decrescente
+            relevantAgenda.sort((a,b) => {
+                if (a.data !== b.data) return a.data < b.data ? 1 : -1;
+                return a.hora < b.hora ? -1 : 1;
+            });
+
+            relevantAgenda.forEach(a => {
+                const tr = document.createElement('tr');
+                const clientObj = clientsList.find(c => c.id === a.clienteId);
+                const nome = clientObj ? clientObj.nome : 'Cliente Deletado';
+                const dataBr = a.data.split('-').reverse().join('/');
+                const valorFormatado = parseFloat(a.valor || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+                tr.innerHTML = `
+                    <td>${dataBr}</td>
+                    <td>${nome}</td>
+                    <td>${a.servico}</td>
+                    <td>${valorFormatado}</td>
+                `;
+                financeListTbody.appendChild(tr);
+            });
+        }
+    }
 }
 
 // ======================== SERVICOS (CRUD) LOGIC ========================

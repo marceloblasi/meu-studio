@@ -14,7 +14,6 @@
             <p class="subtitle">Gestão de Beleza</p>
         </div>
         <nav>
-            <button id="btn-nav-home" class="nav-btn active">Início (Painel ERP)</button>
             <button id="btn-nav-list" class="nav-btn">Lista de Clientes</button>
             <button id="btn-nav-agenda" class="nav-btn">Agenda</button>
             <button id="btn-nav-finance" class="nav-btn">Painel Financeiro</button>
@@ -184,14 +183,34 @@
                 </div>
             </div>
 
-            <div class="dashboard-grid">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div class="dash-card primary">
-                    <h3>Faturamento Confirmado</h3>
-                    <p id="dash-faturamento" class="dash-value">R$ 0,00</p>
+                    <h3>Faturamento (Período/Filtro)</h3>
+                    <div class="dash-value" id="dash-faturamento">R$ 0,00</div>
                 </div>
                 <div class="dash-card">
-                    <h3>Atendimentos Concluídos</h3>
-                    <p id="dash-servicos" class="dash-value">0</p>
+                    <h3>Serviços Realizados</h3>
+                    <div class="dash-value" id="dash-servicos">0</div>
+                </div>
+            </div>
+
+            <!-- New table here -->
+            <div class="card" style="margin-top:20px;">
+                <h3 style="color:var(--text-primary); font-size:16px; margin-bottom:15px;">Serviços Faturados neste Filtro</h3>
+                <div style="overflow-y:auto; max-height: 40vh;">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Serviço</th>
+                                <th>Valor (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="finance-list-tbody">
+                        </tbody>
+                    </table>
+                    <div id="finance-list-empty" class="empty-state hidden" style="margin-top: 10px; font-size: 13px;">Nenhum serviço atende a estes critérios de filtro.</div>
                 </div>
             </div>
             <div class="mt-2" style="text-align:center; color: var(--text-secondary); margin-top:50px;">
