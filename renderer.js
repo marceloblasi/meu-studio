@@ -30,6 +30,7 @@ const agendaServicoSelect = document.getElementById('agenda-servico');
 const agendaValorInput = document.getElementById('agenda-valor');
 const agendaDataInput = document.getElementById('agenda-data');
 const agendaHoraInput = document.getElementById('agenda-hora');
+const agendaHoraFimInput = document.getElementById('agenda-hora-fim');
 
 const btnCloseAgendaModal = document.getElementById('btn-close-agenda-modal');
 const btnDeleteAgendaModal = document.getElementById('btn-delete-agenda-modal');
@@ -362,13 +363,14 @@ btnNextDay.addEventListener('click', () => {
 
 async function renderDailyCalendar() {
     updateCalendarDateDisplay();
+    timelineContainer.className = 'calendar-grid'; 
     timelineContainer.innerHTML = '';
     
     // Check folga
     const dayOfWeek = currentDate.getDay().toString();
     if(globalConfig && globalConfig.diasUteis && !globalConfig.diasUteis.includes(dayOfWeek)) {
         timelineContainer.innerHTML = `
-            <div class="empty-state">
+            <div class="empty-state" style="margin-top:40px;">
                 <div class="empty-icon">🏖️</div>
                 <h3 style="color:var(--text-primary); margin-bottom:10px;">Dia de Folga!</h3>
                 <p>Nenhum atendimento previsto para este dia da semana segundo suas configurações.</p>
@@ -386,68 +388,129 @@ async function renderDailyCalendar() {
     if(isNaN(startH)) startH = 8;
     if(isNaN(endH)) endH = 20;
 
+    const totalHours = endH - startH + 1;
+    
+    const inner = document.createElement('div');
+    inner.className = 'calendar-inner';
+    inner.style.height = `${totalHours * 60}px`;
+
     for(let h = startH; h <= endH; h++) {
-        const hourStr = h.toString().padStart(2, '0') + ':00';
-        const prefix = h.toString().padStart(2, '0') + ':';
-        const appsInHour = todaysAgenda.filter(a => a.hora.startsWith(prefix));
-
-        const slotDiv = document.createElement('div');
-        slotDiv.className = 'timeline-slot';
+        const rowTop = (h - startH) * 60;
         
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'timeline-time';
-        timeDiv.textContent = hourStr;
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'timeline-content';
+        const timeRow = document.createElement('div');
+        timeRow.className = 'time-row';
+        timeRow.style.top = `${rowTop}px`;
         
-        if (appsInHour.length > 0) {
-            appsInHour.forEach(agenda => {
-                const client = clientsList.find(c => c.id === agenda.clienteId);
-                const clientName = client ? client.nome : 'Cliente Deletada';
-                const concluidoClass = agenda.concluido ? 'concluido' : '';
-                
-                const blockDiv = document.createElement('div');
-                blockDiv.className = `agenda-block ${concluidoClass}`;
-                blockDiv.innerHTML = `
-                    <span style="font-weight:600;">${agenda.hora} - ${clientName} (${agenda.servico})</span>
-                    <span>${parseFloat(agenda.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} ${agenda.concluido ? '✔' : ''}</span>
-                `;
-                blockDiv.onclick = (e) => {
-                    e.stopPropagation();
-                    openAgendaModal(agenda);
-                };
-                contentDiv.appendChild(blockDiv);
-            });
-        } else {
-            contentDiv.style.color = '#ccc';
-            contentDiv.style.fontStyle = 'italic';
-            contentDiv.textContent = ''; // Removed text, just keep behavior
-            const innerLink = document.createElement('span');
-            innerLink.textContent = '+ Marcar Horário';
-            innerLink.style.fontSize = '12px';
-            innerLink.style.cursor = 'pointer';
-            contentDiv.appendChild(innerLink);
-            slotDiv.onclick = () => openNewAgendaModal(targetDate, hourStr);
+        const labelCol = document.createElement('div');
+        labelCol.className = 'time-label-col';
+        labelCol.textContent = h.toString().padStart(2, '0') + ':00';
+        timeRow.appendChild(labelCol);
+        
+        inner.appendChild(timeRow);
+
+        const slot1 = document.createElement('div');
+        slot1.className = 'bg-slot';
+        slot1.style.top = `${rowTop}px`;
+        slot1.onclick = () => openNewAgendaModal(targetDate, h.toString().padStart(2, '0') + ':00', h.toString().padStart(2, '0') + ':30');
+        inner.appendChild(slot1);
+
+        if(h < endH) {
+            const timeRowHalf = document.createElement('div');
+            timeRowHalf.className = 'time-row-half';
+            timeRowHalf.style.top = `${rowTop + 30}px`;
+            inner.appendChild(timeRowHalf);
+            
+            const slot2 = document.createElement('div');
+            slot2.className = 'bg-slot';
+            slot2.style.top = `${rowTop + 30}px`;
+            slot2.onclick = () => openNewAgendaModal(targetDate, h.toString().padStart(2, '0') + ':30', (h+1).toString().padStart(2, '0') + ':00');
+            inner.appendChild(slot2);
         }
-
-        slotDiv.appendChild(timeDiv);
-        slotDiv.appendChild(contentDiv);
-        timelineContainer.appendChild(slotDiv);
     }
+
+    todaysAgenda.forEach(agenda => {
+        const client = clientsList.find(c => c.id === agenda.clienteId);
+        const clientName = client ? client.nome : 'Cliente Deletada';
+        
+        const eventStartSplit = agenda.hora.split(':');
+        let eh = parseInt(eventStartSplit[0]);
+        let em = parseInt(eventStartSplit[1]);
+        if(isNaN(eh)) eh = startH;
+        if(isNaN(em)) em = 0;
+        
+        let fh = eh + 1;
+        let fm = em;
+        if (agenda.horaFim) {
+            const endSplit = agenda.horaFim.split(':');
+            fh = parseInt(endSplit[0]);
+            fm = parseInt(endSplit[1]);
+        }
+        
+        let startMinutes = (eh - startH) * 60 + em;
+        let endMinutes = (fh - startH) * 60 + fm;
+        let durationMinutes = endMinutes - startMinutes;
+        
+        if (durationMinutes < 15) durationMinutes = 15;
+        if (startMinutes < 0) startMinutes = 0;
+        
+        const topPx = startMinutes;
+        const heightPx = durationMinutes;
+
+        const blockDiv = document.createElement('div');
+        blockDiv.className = `calendar-event ${agenda.concluido ? 'concluido' : ''}`;
+        blockDiv.style.top = `${topPx}px`;
+        blockDiv.style.height = `${heightPx}px`;
+        
+        const hFimStr = fh.toString().padStart(2,'0') + ':' + fm.toString().padStart(2,'0');
+
+        blockDiv.innerHTML = `
+            <div class="calendar-event-time">${agenda.hora} - ${hFimStr} ${agenda.concluido ? '✔' : ''}</div>
+            <div style="font-weight:600; font-size:13px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${clientName}</div>
+            <div style="font-size:11px; margin-top:auto;">${agenda.servico}</div>
+        `;
+        blockDiv.onclick = (e) => {
+            e.stopPropagation();
+            openAgendaModal(agenda);
+        };
+        inner.appendChild(blockDiv);
+    });
+
+    if (targetDate === getFormattedDate(new Date())) {
+        const now = new Date();
+        let nh = now.getHours();
+        let nm = now.getMinutes();
+        if (nh >= startH && nh <= endH) {
+            const nowPx = (nh - startH) * 60 + nm;
+            const line = document.createElement('div');
+            line.className = 'current-time-line';
+            line.style.top = `${nowPx}px`;
+            const dot = document.createElement('div');
+            dot.className = 'current-time-dot';
+            dot.style.top = `${nowPx}px`;
+            inner.appendChild(line);
+            inner.appendChild(dot);
+            
+            setTimeout(() => {
+                timelineContainer.scrollTop = nowPx - 100 > 0 ? nowPx - 100 : 0;
+            }, 100);
+        }
+    }
+
+    timelineContainer.appendChild(inner);
 }
 
-function openNewAgendaModal(date, time) {
+function openNewAgendaModal(date, timeStart, timeEnd) {
     agendaForm.reset();
     document.getElementById('agenda-id').value = '';
     agendaDataInput.value = date;
-    agendaHoraInput.value = time;
+    agendaHoraInput.value = timeStart;
+    if(agendaHoraFimInput) agendaHoraFimInput.value = timeEnd;
     
-    modalTimeLabel.textContent = `Novo Agendamento: ${time}`;
+    modalTimeLabel.textContent = `Novo Agendamento: ${timeStart} às ${timeEnd}`;
     btnDeleteAgendaModal.classList.add('hidden');
     btnConcluirAgendaModal.classList.add('hidden');
     
-    agendaModalOverlay.classList.remove('hidden');
+    agendaModalOverlay.style.display = 'flex';
 }
 
 function openAgendaModal(agenda) {
@@ -458,7 +521,18 @@ function openAgendaModal(agenda) {
     agendaHoraInput.value = agenda.hora;
     document.getElementById('agenda-valor').value = agenda.valor;
     
-    modalTimeLabel.textContent = `Editar Horário: ${agenda.hora}`;
+    if(agendaHoraFimInput) {
+        let hFim = agenda.horaFim;
+        if(!hFim) {
+            const split = agenda.hora.split(':');
+            hFim = (parseInt(split[0]) + 1).toString().padStart(2,'0') + ':' + split[1];
+        }
+        agendaHoraFimInput.value = hFim;
+        modalTimeLabel.textContent = `Editar Horário: ${agenda.hora} às ${hFim}`;
+    } else {
+        modalTimeLabel.textContent = `Editar Horário: ${agenda.hora}`;
+    }
+
     btnDeleteAgendaModal.classList.remove('hidden');
     btnDeleteAgendaModal.onclick = () => deleteAgenda(agenda.id);
     
@@ -469,11 +543,11 @@ function openAgendaModal(agenda) {
         btnConcluirAgendaModal.classList.add('hidden');
     }
 
-    agendaModalOverlay.classList.remove('hidden');
+    agendaModalOverlay.style.display = 'flex';
 }
 
 btnCloseAgendaModal.addEventListener('click', () => {
-    agendaModalOverlay.classList.add('hidden');
+    agendaModalOverlay.style.display = 'none';
 });
 
 agendaForm.addEventListener('submit', async (e) => {
@@ -493,13 +567,14 @@ agendaForm.addEventListener('submit', async (e) => {
         servico: document.getElementById('agenda-servico').value,
         data: document.getElementById('agenda-data').value,
         hora: document.getElementById('agenda-hora').value,
+        horaFim: agendaHoraFimInput ? agendaHoraFimInput.value : null,
         valor: document.getElementById('agenda-valor').value,
         concluido: concluido
     };
 
     const response = await window.api.saveAgenda(agendaData);
     if (response.success) {
-        agendaModalOverlay.classList.add('hidden');
+        agendaModalOverlay.style.display = 'none';
         renderDailyCalendar(); 
     } else {
         alert("Erro ao salvar: " + response.error);
@@ -510,7 +585,7 @@ window.deleteAgenda = async (id) => {
     if(confirm('Tem certeza que deseja apagar este agendamento?')){
         const response = await window.api.deleteAgenda(id);
         if(response.success) {
-            agendaModalOverlay.classList.add('hidden');
+            agendaModalOverlay.style.display = 'none';
             renderDailyCalendar();
         } else {
             alert('Erro ao apagar: ' + response.error);
@@ -524,7 +599,7 @@ window.completeAgenda = async (id) => {
     if (agenda) {
         agenda.concluido = true;
         await window.api.saveAgenda(agenda);
-        agendaModalOverlay.classList.add('hidden');
+        agendaModalOverlay.style.display = 'none';
         renderDailyCalendar();
     }
 };
