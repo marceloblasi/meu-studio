@@ -112,8 +112,7 @@ function navigateTo(view) {
         viewList.classList.add('active');
         loadClients();
     } else if (view === 'form') {
-        btnNavAdd.classList.add('active');
-        viewForm.classList.add('active');
+        if(viewForm) viewForm.classList.add('active');
     } else if (view === 'agenda') {
         btnNavAgenda.classList.add('active');
         viewAgenda.classList.add('active');
@@ -327,6 +326,8 @@ async function populateServicosDropdowns() {
     
     if(agendaServicoSelect) agendaServicoSelect.innerHTML = optionsHtml;
     if(filterFinanceServico) filterFinanceServico.innerHTML = filterOptionsHtml;
+    const filterAgendaServico = document.getElementById('filter-agenda-servico');
+    if(filterAgendaServico) filterAgendaServico.innerHTML = filterOptionsHtml;
     
     const clientCheckboxes = document.getElementById('client-servicos-checkboxes');
     if(clientCheckboxes) clientCheckboxes.innerHTML = checkboxesHtml;
@@ -343,12 +344,23 @@ if(agendaServicoSelect) {
 }
 
 async function populateAgendaClients() {
-    clientsList = await window.api.getClients();
-    let optionsHtml = '<option value="" disabled selected>Selecione uma cliente...</option>';
-    clientsList.forEach(c => {
-        optionsHtml += `<option value="${c.id}">${c.nome}</option>`;
+    agendaClienteSelect.innerHTML = '<option value="">Selecione uma cliente...</option>';
+    const filterACliente = document.getElementById('filter-agenda-cliente');
+    if (filterACliente) filterACliente.innerHTML = '<option value="">Todas as Clientes</option>';
+
+    clientsList.forEach(client => {
+        const option = document.createElement('option');
+        option.value = client.id;
+        option.textContent = client.nome;
+        agendaClienteSelect.appendChild(option);
+        
+        if (filterACliente) {
+            const fOption = document.createElement('option');
+            fOption.value = client.id;
+            fOption.textContent = client.nome;
+            filterACliente.appendChild(fOption);
+        }
     });
-    agendaClienteSelect.innerHTML = optionsHtml;
 }
 
 async function loadAgenda() {
@@ -415,11 +427,27 @@ async function renderDailyCalendar() {
     const todaysAgenda = agendaAll.filter(a => a.data === targetDate);
 
     if (agendaViewMode === 'list') {
+        const calendarDateInput = document.getElementById('calendar-date');
+        const calendarDayLabel = document.getElementById('calendar-day-label');
+        if(calendarDateInput) calendarDateInput.style.display = 'none';
+        if(calendarDayLabel) calendarDayLabel.style.display = 'none';
+        if(btnPrevDay) btnPrevDay.style.visibility = 'hidden';
+        if(btnNextDay) btnNextDay.style.visibility = 'hidden';
+        if(document.getElementById('agenda-date-center')) document.getElementById('agenda-date-center').style.marginTop = '10px';
+
         timelineContainer.style.display = 'none';
-        if(agendaListViewContainer) agendaListViewContainer.style.display = 'block';
-        renderAgendaListView(todaysAgenda);
+        if(agendaListViewContainer) agendaListViewContainer.style.display = 'flex';
+        applyFiltersAndRenderAgendaList(agendaAll);
         return;
     } else {
+        const calendarDateInput = document.getElementById('calendar-date');
+        const calendarDayLabel = document.getElementById('calendar-day-label');
+        if(calendarDateInput) calendarDateInput.style.display = 'inline-block';
+        if(calendarDayLabel) calendarDayLabel.style.display = 'block';
+        if(btnPrevDay) btnPrevDay.style.visibility = 'visible';
+        if(btnNextDay) btnNextDay.style.visibility = 'visible';
+        if(document.getElementById('agenda-date-center')) document.getElementById('agenda-date-center').style.marginTop = '0';
+
         timelineContainer.style.display = 'block';
         if(agendaListViewContainer) agendaListViewContainer.style.display = 'none';
     }
@@ -577,6 +605,44 @@ function renderAgendaListView(agendaList) {
         agendaListTbody.appendChild(tr);
     });
 }
+
+function applyFiltersAndRenderAgendaList(agendaAll) {
+    const filterDataInput = document.getElementById('filter-agenda-data');
+    const filterClienteInput = document.getElementById('filter-agenda-cliente');
+    const filterServicoInput = document.getElementById('filter-agenda-servico');
+
+    const filterData = filterDataInput ? filterDataInput.value : '';
+    const filterCliente = filterClienteInput ? filterClienteInput.value : '';
+    const filterServico = filterServicoInput ? filterServicoInput.value : '';
+
+    let filtered = agendaAll;
+    
+    if (filterData) {
+        filtered = filtered.filter(a => a.data === filterData);
+    }
+    if (filterCliente) {
+        filtered = filtered.filter(a => a.clienteId === filterCliente);
+    }
+    if (filterServico) {
+        filtered = filtered.filter(a => a.servico === filterServico);
+    }
+    
+    filtered.sort((a,b) => {
+        if (a.data !== b.data) return a.data < b.data ? 1 : -1;
+        return a.hora < b.hora ? -1 : 1;
+    });
+
+    renderAgendaListView(filtered);
+}
+
+// Agenda Filters Event Listeners
+const filterAgendaData = document.getElementById('filter-agenda-data');
+const filterAgendaCliente = document.getElementById('filter-agenda-cliente');
+const filterAgendaServico = document.getElementById('filter-agenda-servico');
+
+if(filterAgendaData) filterAgendaData.addEventListener('change', renderDailyCalendar);
+if(filterAgendaCliente) filterAgendaCliente.addEventListener('change', renderDailyCalendar);
+if(filterAgendaServico) filterAgendaServico.addEventListener('change', renderDailyCalendar);
 
 if(btnToggleAgendaView) {
     btnToggleAgendaView.addEventListener('click', () => {

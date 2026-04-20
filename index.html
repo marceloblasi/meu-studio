@@ -98,10 +98,10 @@
 
             <div class="agenda-header-controls">
                 <button class="btn-secondary" id="btn-prev-day" style="min-width: 120px;">◄ Anterior</button>
-                <div style="text-align:center; flex:1;">
+                <div style="text-align:center; flex:1;" id="agenda-date-center">
                     <input type="date" id="calendar-date" class="date-picker-large">
                     <p id="calendar-day-label" style="font-size:14px; color:var(--text-secondary); margin-top:5px; margin-bottom: 10px;"></p>
-                    <button id="btn-toggle-agenda-view" class="btn-secondary" style="padding: 5px 12px; font-size:12px;">Ver Horários em Lista 📋</button>
+                    <button id="btn-toggle-agenda-view" class="btn-secondary" style="padding: 5px 12px; font-size:12px; border-radius: 15px; font-weight:bold;">Ver Horários em Lista 📋</button>
                 </div>
                 <button class="btn-secondary" id="btn-next-day" style="min-width: 120px;">Próximo ►</button>
             </div>
@@ -110,21 +110,45 @@
                 <!-- JS injeta timeline -->
             </div>
 
-            <div id="agenda-list-view-container" class="card" style="display:none; margin-top:15px; overflow-y:auto; max-height: 60vh;">
-                <table class="clients-table">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Hora (Início-Fim)</th>
-                            <th>Cliente</th>
-                            <th>Serviço</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="agenda-list-tbody">
-                    </tbody>
-                </table>
-                <div id="agenda-list-empty" class="empty-state hidden">Nenhum atendimento para esse dia.</div>
+            <div id="agenda-list-view-container" style="display:none; margin-top:15px; flex-direction: column;">
+                
+                <!-- Filters -->
+                <div class="card" style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: flex-end; padding: 20px;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); display:block; margin-bottom:5px;">Data (Opcional)</label>
+                        <input type="date" id="filter-agenda-data" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); display:block; margin-bottom:5px;">Cliente</label>
+                        <select id="filter-agenda-cliente" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <option value="">Todas as Clientes</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); display:block; margin-bottom:5px;">Serviço</label>
+                        <select id="filter-agenda-servico" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                             <option value="">Todos os Serviços</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="card" style="overflow-y:auto; max-height: 50vh;">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Hora (Início-Fim)</th>
+                                <th>Cliente</th>
+                                <th>Serviço</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agenda-list-tbody">
+                        </tbody>
+                    </table>
+                    <div id="agenda-list-empty" class="empty-state hidden">Nenhum atendimento atende aos filtros.</div>
+                </div>
             </div>
         </section>
 
