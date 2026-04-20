@@ -717,4 +717,11 @@ select:focus {
 }
 #view-home .card:hover h3 {
     color: white !important;
+}.agenda-header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    width: 100%;
 }
