@@ -659,7 +659,7 @@ select:focus {
 
 .calendar-event {
     position: absolute;
-    left: 10px;
+    left: 65px; /* Empurrado para direita liberando a timeline */
     right: 15px;
     background: var(--primary-color);
     border-left: 4px solid #F48FB1;
@@ -694,7 +694,7 @@ select:focus {
 
 .current-time-line {
     position: absolute;
-    left: 60px;
+    left: 65px;
     right: 0;
     border-top: 2px solid #FF5252;
     z-index: 20;
@@ -702,11 +702,19 @@ select:focus {
 }
 .current-time-dot {
     position: absolute;
-    left: 54px;
+    left: 59px;
     width: 10px;
     height: 10px;
     background: #FF5252;
     border-radius: 50%;
     transform: translateY(-5px);
     z-index: 20;
+}
+#view-home .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(255, 182, 193, 0.4);
+    background-color: var(--primary-color);
+}
+#view-home .card:hover h3 {
+    color: white !important;
 }

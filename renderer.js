@@ -13,6 +13,17 @@ const tableClients = document.querySelector('.clients-table');
 const searchInput = document.getElementById('search-input');
 const btnCancel = document.getElementById('btn-cancel');
 
+// Home Elements
+const btnNavHome = document.getElementById('btn-nav-home');
+const viewHome = document.getElementById('view-home');
+const homeBtnAgenda = document.getElementById('home-btn-agenda');
+const homeBtnFinance = document.getElementById('home-btn-finance');
+const homeBtnList = document.getElementById('home-btn-list');
+const homeBtnServicos = document.getElementById('home-btn-servicos');
+
+const btnPageAdd = document.getElementById('btn-page-add');
+const btnPageConfig = document.getElementById('btn-page-config');
+
 // Agenda Elements
 const btnNavAgenda = document.getElementById('btn-nav-agenda');
 const viewAgenda = document.getElementById('view-agenda');
@@ -22,6 +33,12 @@ const calendarDayLabel = document.getElementById('calendar-day-label');
 const btnPrevDay = document.getElementById('btn-prev-day');
 const btnNextDay = document.getElementById('btn-next-day');
 const timelineContainer = document.getElementById('timeline-container');
+
+const btnToggleAgendaView = document.getElementById('btn-toggle-agenda-view');
+const agendaListViewContainer = document.getElementById('agenda-list-view-container');
+const agendaListTbody = document.getElementById('agenda-list-tbody');
+const agendaListEmpty = document.getElementById('agenda-list-empty');
+let agendaViewMode = 'calendar';
 
 const agendaModalOverlay = document.getElementById('agenda-modal-overlay');
 const agendaForm = document.getElementById('agenda-form');
@@ -73,7 +90,7 @@ let clientsList = [];
 
 // Navigation Functions
 function navigateTo(view) {
-    // Reset classes
+    if(btnNavHome) btnNavHome.classList.remove('active');
     btnNavList.classList.remove('active');
     btnNavAdd.classList.remove('active');
     btnNavAgenda.classList.remove('active');
@@ -81,6 +98,7 @@ function navigateTo(view) {
     btnNavServicos.classList.remove('active');
     if(btnNavConfig) btnNavConfig.classList.remove('active');
     
+    if(viewHome) viewHome.classList.remove('active');
     viewList.classList.remove('active');
     viewForm.classList.remove('active');
     viewAgenda.classList.remove('active');
@@ -88,7 +106,10 @@ function navigateTo(view) {
     viewServicos.classList.remove('active');
     if(viewConfig) viewConfig.classList.remove('active');
 
-    if (view === 'list') {
+    if (view === 'home') {
+        if(btnNavHome) btnNavHome.classList.add('active');
+        if(viewHome) viewHome.classList.add('active');
+    } else if (view === 'list') {
         btnNavList.classList.add('active');
         viewList.classList.add('active');
         loadClients();
@@ -126,12 +147,22 @@ function openAddForm() {
 }
 
 // Event Listeners - Navigation
+if(btnNavHome) btnNavHome.addEventListener('click', () => navigateTo('home'));
 btnNavList.addEventListener('click', () => navigateTo('list'));
-btnNavAdd.addEventListener('click', openAddForm);
 btnNavAgenda.addEventListener('click', () => navigateTo('agenda'));
 btnNavFinance.addEventListener('click', () => navigateTo('finance'));
 btnNavServicos.addEventListener('click', () => navigateTo('servicos'));
-if(btnNavConfig) btnNavConfig.addEventListener('click', () => navigateTo('config'));
+
+// Home Cards
+if(homeBtnAgenda) homeBtnAgenda.addEventListener('click', () => navigateTo('agenda'));
+if(homeBtnFinance) homeBtnFinance.addEventListener('click', () => navigateTo('finance'));
+if(homeBtnList) homeBtnList.addEventListener('click', () => navigateTo('list'));
+if(homeBtnServicos) homeBtnServicos.addEventListener('click', () => navigateTo('servicos'));
+
+// Substitutes
+if(btnPageAdd) btnPageAdd.addEventListener('click', openAddForm);
+if(btnPageConfig) btnPageConfig.addEventListener('click', () => navigateTo('config'));
+
 btnEmptyAdd.addEventListener('click', openAddForm);
 btnCancel.addEventListener('click', () => navigateTo('list'));
 
@@ -369,6 +400,8 @@ async function renderDailyCalendar() {
     // Check folga
     const dayOfWeek = currentDate.getDay().toString();
     if(globalConfig && globalConfig.diasUteis && !globalConfig.diasUteis.includes(dayOfWeek)) {
+        timelineContainer.style.display = 'block';
+        if(agendaListViewContainer) agendaListViewContainer.style.display = 'none';
         timelineContainer.innerHTML = `
             <div class="empty-state" style="margin-top:40px;">
                 <div class="empty-icon">🏖️</div>
@@ -382,6 +415,16 @@ async function renderDailyCalendar() {
     const agendaAll = await window.api.getAgenda();
     const targetDate = getFormattedDate(currentDate);
     const todaysAgenda = agendaAll.filter(a => a.data === targetDate);
+
+    if (agendaViewMode === 'list') {
+        timelineContainer.style.display = 'none';
+        if(agendaListViewContainer) agendaListViewContainer.style.display = 'block';
+        renderAgendaListView(todaysAgenda);
+        return;
+    } else {
+        timelineContainer.style.display = 'block';
+        if(agendaListViewContainer) agendaListViewContainer.style.display = 'none';
+    }
 
     let startH = parseInt(globalConfig.horaInicio.split(':')[0]);
     let endH = parseInt(globalConfig.horaFim.split(':')[0]);
@@ -497,6 +540,57 @@ async function renderDailyCalendar() {
     }
 
     timelineContainer.appendChild(inner);
+}
+
+function renderAgendaListView(agendaList) {
+    if(!agendaListTbody) return;
+    agendaListTbody.innerHTML = '';
+    
+    if (agendaList.length === 0) {
+        agendaListEmpty.classList.remove('hidden');
+        return;
+    }
+    
+    agendaListEmpty.classList.add('hidden');
+    
+    agendaList.forEach(agenda => {
+        const client = clientsList.find(c => c.id === agenda.clienteId);
+        const clientName = client ? client.nome : 'Cliente Deletada';
+        
+        let fhStr = '';
+        if(agenda.horaFim) {
+             fhStr = ` - ${agenda.horaFim}`;
+        }
+
+        const dataBr = agenda.data.split('-').reverse().join('/');
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${dataBr}</td>
+            <td><strong>${agenda.hora}${fhStr}</strong></td>
+            <td>${clientName}</td>
+            <td>${agenda.servico}</td>
+            <td>
+                ${agenda.concluido ? '<span class="badge-concluido">✔ Concluído</span>' : '<span style="color:#FFA4B2; font-size:12px;">Agendado</span>'}
+            </td>
+        `;
+        tr.onclick = () => openAgendaModal(agenda);
+        tr.style.cursor = 'pointer';
+        agendaListTbody.appendChild(tr);
+    });
+}
+
+if(btnToggleAgendaView) {
+    btnToggleAgendaView.addEventListener('click', () => {
+        if(agendaViewMode === 'calendar') {
+            agendaViewMode = 'list';
+            btnToggleAgendaView.textContent = 'Ver Calendário Mágico ✨';
+        } else {
+            agendaViewMode = 'calendar';
+            btnToggleAgendaView.textContent = 'Ver Horários em Lista 📋';
+        }
+        renderDailyCalendar();
+    });
 }
 
 function openNewAgendaModal(date, timeStart, timeEnd) {
