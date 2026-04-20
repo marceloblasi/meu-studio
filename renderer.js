@@ -1,6 +1,5 @@
 // UI Elements
 const btnNavList = document.getElementById('btn-nav-list');
-const btnNavAdd = document.getElementById('btn-nav-add');
 const viewList = document.getElementById('view-list');
 const viewForm = document.getElementById('view-form');
 const formTitle = document.getElementById('form-title');
@@ -91,19 +90,18 @@ let clientsList = [];
 // Navigation Functions
 function navigateTo(view) {
     if(btnNavHome) btnNavHome.classList.remove('active');
-    btnNavList.classList.remove('active');
-    btnNavAdd.classList.remove('active');
-    btnNavAgenda.classList.remove('active');
-    btnNavFinance.classList.remove('active');
-    btnNavServicos.classList.remove('active');
+    if(btnNavList) btnNavList.classList.remove('active');
+    if(btnNavAgenda) btnNavAgenda.classList.remove('active');
+    if(btnNavFinance) btnNavFinance.classList.remove('active');
+    if(btnNavServicos) btnNavServicos.classList.remove('active');
     if(btnNavConfig) btnNavConfig.classList.remove('active');
     
     if(viewHome) viewHome.classList.remove('active');
-    viewList.classList.remove('active');
-    viewForm.classList.remove('active');
-    viewAgenda.classList.remove('active');
-    viewFinance.classList.remove('active');
-    viewServicos.classList.remove('active');
+    if(viewList) viewList.classList.remove('active');
+    if(viewForm) viewForm.classList.remove('active');
+    if(viewAgenda) viewAgenda.classList.remove('active');
+    if(viewFinance) viewFinance.classList.remove('active');
+    if(viewServicos) viewServicos.classList.remove('active');
     if(viewConfig) viewConfig.classList.remove('active');
 
     if (view === 'home') {
